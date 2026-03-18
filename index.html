@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZB Audio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #7c5cfc;
+      --accent2: #e85d75;
+      --accent3: #10b981;
+      --glow: rgba(124, 92, 252, 0.18);
+      --surface: rgba(255,255,255,0.7);
+      --surface2: rgba(255,255,255,0.5);
+      --border: rgba(0,0,0,0.06);
+      --border-bright: rgba(0,0,0,0.1);
+      --text: #1a1a2e;
+      --muted: #94a3b8;
+    }
+
+    body {
+      font-family: "Archivo", sans-serif;
+      background: #f0f0f8;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 24px 56px;
+      overflow-x: hidden;
+      letter-spacing: -0.02em;
+    }
+
+    /* Animated aurora background */
+    .aurora {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .aurora::before,
+    .aurora::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.35;
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+
+    .aurora::before {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, #c4b5fd, #a78bfa);
+      top: -200px; left: -150px;
+      animation-duration: 14s;
+    }
+
+    .aurora::after {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #fda4af, #f9a8d4);
+      bottom: -150px; right: -100px;
+      animation-duration: 10s;
+      animation-delay: -4s;
+    }
+
+    .aurora-3 {
+      position: fixed;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, #6ee7b7, #67e8f9);
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
+      bottom: 20%; left: 20%;
+      animation: drift 16s ease-in-out infinite alternate;
+      animation-delay: -7s;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(40px, 30px) scale(1.1); }
+    }
+
+    /* Noise texture overlay */
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.018;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 640px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 18px var(--glow);
+    }
+
+    .logo-icon svg { width: 22px; height: 22px; }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .tagline {
+      font-size: 15px;
+      font-weight: 500;
+      color: #7c8ba0;
+      letter-spacing: -0.02em;
+    }
+
+    /* Card base */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 28px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 40px rgba(0,0,0,0.06);
+    }
+
+    /* ─── PRIMARY: Bookmarklet section ─── */
+    .bm-card {
+      margin-bottom: 14px;
+    }
+
+    .bm-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .bm-card-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -0.03em;
+    }
+
+    .recommended-badge {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ede9fe, #fce7f3);
+      color: var(--accent);
+      border: 1px solid rgba(124,92,252,0.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    .bm-drag-area {
+      background: rgba(124,92,252,0.03);
+      border: 2px dashed rgba(124,92,252,0.18);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .drag-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 14px;
+    }
+
+    .bookmarklet-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: 14px;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      padding: 14px 32px;
+      text-decoration: none;
+      box-shadow: 0 4px 20px var(--glow);
+      cursor: grab;
+      transition: transform 0.15s, box-shadow 0.15s;
+      user-select: none;
+    }
+
+    .bookmarklet-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px var(--glow);
+    }
+
+    .bookmarklet-link:active { cursor: grabbing; transform: scale(0.97); }
+
+    .drag-hint {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #a0aec0;
+      line-height: 1.5;
+    }
+
+    .bm-steps {
+      display: flex;
+      gap: 10px;
+    }
+
+    .bm-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .bm-step-num {
+      width: 28px; height: 28px;
+      background: rgba(124,92,252,0.08);
+      border: 1px solid rgba(124,92,252,0.15);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .bm-step-text {
+      font-size: 13px;
+      color: #7c8ba0;
+      line-height: 1.4;
+      letter-spacing: -0.015em;
+    }
+
+    .bm-step-text strong { color: #475569; font-weight: 700; }
+
+    /* ─── Divider ─── */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 18px 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #b0b8c8;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(0,0,0,0.07);
+    }
+
+    /* ─── SECONDARY: URL input form ─── */
+    .url-card {
+      opacity: 0.9;
+    }
+
+    .url-card-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 14px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      padding: 14px 16px 14px 44px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-wrap input:focus {
+      border-color: rgba(124,92,252,0.5);
+      box-shadow: 0 0 0 3px rgba(124,92,252,0.1);
+    }
+
+    .input-wrap input::placeholder { color: #b0b8c8; }
+
+    .input-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #b0b8c8;
+      pointer-events: none;
+    }
+
+    .go-btn {
+      background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+      border: none;
+      border-radius: 14px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 14px 26px;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(124,92,252,0.3);
+      letter-spacing: -0.02em;
+    }
+
+    .go-btn:hover:not(:disabled) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(124,92,252,0.4);
+    }
+
+    .go-btn:active:not(:disabled) { transform: translateY(0); }
+    .go-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Progress */
+    .progress-area {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .progress-area.visible { display: block; }
+
+    .progress-bar-track {
+      height: 4px;
+      background: rgba(0,0,0,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .steps {
+      display: flex;
+      gap: 8px;
+    }
+
+    .step {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: #a0aec0;
+      text-align: center;
+      padding: 7px 6px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.02);
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      letter-spacing: -0.01em;
+    }
+
+    .step.active {
+      color: var(--accent);
+      background: rgba(124,92,252,0.07);
+      border-color: rgba(124,92,252,0.18);
+    }
+
+    .step.done {
+      color: var(--accent3);
+      background: rgba(16,185,129,0.07);
+      border-color: rgba(16,185,129,0.18);
+    }
+
+    .status-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .status-text.error { color: #ef4444; }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid #e2e8f0;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Result */
+    .result {
+      margin-top: 14px;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+
+    .result.visible { display: block; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-inner {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .ep-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .ep-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .ep-icon.iheart {
+      background: linear-gradient(135deg, #ede9fe, #fce7f3);
+      border: 1px solid rgba(124,92,252,0.15);
+    }
+
+    .ep-icon.brightcove {
+      background: linear-gradient(135deg, #d1fae5, #cffafe);
+      border: 1px solid rgba(16,185,129,0.15);
+    }
+
+    .ep-info { flex: 1; min-width: 0; }
+
+    .ep-title {
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.3;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .ep-meta {
+      font-size: 13px;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    .ep-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 20px;
+      margin-left: 6px;
+    }
+
+    .ep-badge.iheart {
+      background: #ede9fe;
+      color: var(--accent);
+      border: 1px solid rgba(124,92,252,0.18);
+    }
+
+    .ep-badge.brightcove {
+      background: #d1fae5;
+      color: var(--accent3);
+      border: 1px solid rgba(16,185,129,0.18);
+    }
+
+    .url-pill {
+      background: #f8fafc;
+      border: 1px solid rgba(0,0,0,0.05);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12px;
+      color: #64748b;
+      word-break: break-all;
+      cursor: text;
+      user-select: all;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .url-pill:hover { border-color: rgba(0,0,0,0.1); color: #475569; }
+
+    .dl-status {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent3);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      display: none;
+    }
+
+    .dl-status.visible { display: flex; }
+
+    .dl-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent3);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+
+    .btn-dl {
+      background: linear-gradient(135deg, #d1fae5, #cffafe);
+      border-color: rgba(16,185,129,0.2);
+      color: #059669;
+    }
+
+    .btn-dl:hover { background: linear-gradient(135deg, #a7f3d0, #a5f3fc); border-color: rgba(16,185,129,0.35); }
+
+    .btn-copy {
+      background: #f1f5f9;
+      border-color: rgba(0,0,0,0.08);
+      color: #64748b;
+    }
+
+    .btn-copy:hover { background: #e2e8f0; color: #475569; }
+
+    .btn-open {
+      background: #f1f5f9;
+      border-color: rgba(0,0,0,0.08);
+      color: #64748b;
+    }
+
+    .btn-open:hover { background: #e2e8f0; color: #475569; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #b0b8c8;
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+
+<div class="aurora"></div>
+<div class="aurora-3"></div>
+<div class="noise"></div>
+
+<div class="wrap">
+  <div class="header">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+      </div>
+      <h1>ZB Audio</h1>
+    </div>
+    <div class="tagline">Download Newstalk ZB audio in one click</div>
+  </div>
+
+  <!-- PRIMARY: Bookmarklet -->
+  <div class="card bm-card">
+    <div class="bm-card-header">
+      <span class="bm-card-title">Bookmarklet</span>
+      <span class="recommended-badge">Recommended</span>
+    </div>
+
+    <div class="bm-drag-area">
+      <div class="drag-label">Drag to your bookmarks bar</div>
+      <a class="bookmarklet-link" id="bm-link" href="#">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+        ZB Audio
+      </a>
+      <p class="drag-hint">Drag the button to your bookmarks bar · or right-click → Bookmark this link</p>
+    </div>
+
+    <div class="bm-steps">
+      <div class="bm-step">
+        <div class="bm-step-num">1</div>
+        <div class="bm-step-text">Drag <strong>ZB Audio</strong> to your bookmarks bar</div>
+      </div>
+      <div class="bm-step">
+        <div class="bm-step-num">2</div>
+        <div class="bm-step-text">Go to any <strong>Newstalk ZB</strong> audio page</div>
+      </div>
+      <div class="bm-step">
+        <div class="bm-step-num">3</div>
+        <div class="bm-step-text">Click <strong>ZB Audio</strong> — MP3 downloads instantly</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="or-divider">or paste a URL manually</div>
+
+  <!-- SECONDARY: CORS proxy URL form -->
+  <div class="card url-card">
+    <div class="url-card-label">Paste a Newstalk ZB page URL</div>
+    <div class="input-group">
+      <div class="input-wrap">
+        <span class="input-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </span>
+        <input type="url" id="url-input"
+          placeholder="https://www.newstalkzb.co.nz/…"
+          autocomplete="off" spellcheck="false" />
+      </div>
+      <button class="go-btn" id="go-btn" onclick="run()">Find &amp; Download</button>
+    </div>
+
+    <div class="progress-area" id="progress-area">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="steps">
+        <div class="step" id="step1">Fetching page</div>
+        <div class="step" id="step2">Finding player</div>
+        <div class="step" id="step3">Getting URL</div>
+      </div>
+      <div class="status-text" id="status-text"></div>
+    </div>
+
+    <div class="result" id="result">
+      <div class="result-inner">
+        <div class="ep-header">
+          <div class="ep-icon" id="ep-icon">🎙️</div>
+          <div class="ep-info">
+            <div class="ep-title" id="ep-title"></div>
+            <div class="ep-meta" id="ep-meta"></div>
+          </div>
+        </div>
+        <div class="dl-status" id="dl-status">
+          <div class="dl-dot"></div>
+          <span id="dl-status-text">Downloading…</span>
+        </div>
+        <div class="url-pill" id="ep-url"></div>
+        <div class="actions">
+          <button class="btn btn-dl" id="dl-btn" onclick="downloadAudio()">↓ Download</button>
+          <button class="btn btn-copy" onclick="copyUrl(event)">Copy URL</button>
+          <button class="btn btn-open" onclick="openUrl()">Open ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Newstalk ZB · iHeart · Brightcove</div>
+</div>
+
+<script>
+  // ─── Bookmarklet setup ───
+  const bmSrc = `(async()=>{
+function toast(m,c){
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;top:16px;right:16px;z-index:2147483647;background:'+(c||'#1a1a2e')+';color:#fff;padding:11px 16px;border-radius:10px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:opacity .4s;max-width:300px;pointer-events:none';
+  d.textContent=m;
+  document.body.appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';setTimeout(()=>d.remove(),400)},3500);
+  return d;
+}
+async function dl(url,name){
+  const r=await fetch(url);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const b=await r.blob();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},10000);
+}
+function fn(s){return(s||'audio').replace(/[^a-z0-9 \\-_]/gi,'').trim().replace(/\\s+/g,'_').substring(0,80)+'.mp3';}
+const st=toast('\\u23f3 Finding audio\\u2026');
+try{
+  const f=document.querySelector('iframe[src*="iheart.com"]');
+  const src=f?.getAttribute('src')||'';
+  const m=src.match(/podcast\\/\\d+\\/episode\\/(\\d+)/);
+  if(m){
+    const r=await fetch('https://nz.api.iheart.com/api/v3/podcast/episodes/'+m[1]);
+    const d=await r.json();
+    const ep=d.episode;
+    if(!ep?.mediaUrl)throw new Error('No media URL from iHeart');
+    st.remove();
+    const dt=toast('\\u2b07\\ufe0f Downloading\\u2026','#7c5cfc');
+    await dl(ep.mediaUrl,fn(ep.title));
+    dt.remove();
+    toast('\\u2713 Done \\u2014 '+(ep.title||'').substring(0,45),'#10b981');
+    return;
+  }
+  const bc=document.querySelector('[data-src$=".mp3"]');
+  if(bc){
+    const url=location.origin+bc.getAttribute('data-src');
+    const ti=document.querySelector('h1')?.textContent?.trim();
+    st.remove();
+    const dt=toast('\\u2b07\\ufe0f Downloading\\u2026','#7c5cfc');
+    await dl(url,fn(ti));
+    dt.remove();
+    toast('\\u2713 Done \\u2014 '+(ti||'').substring(0,45),'#10b981');
+    return;
+  }
+  st.remove();
+  toast('\\u274c No audio player found on this page.','#e85d75');
+}catch(e){
+  st.remove();
+  toast('\\u274c '+e.message,'#e85d75');
+}
+})();`;
+
+  document.getElementById('bm-link').href = 'javascript:' + encodeURIComponent(bmSrc);
+
+  // ─── URL form logic ───
+  let currentUrl = '';
+  let currentTitle = '';
+
+  const CORS_PROXIES = [
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  ];
+
+  async function fetchWithProxy(url) {
+    for (const makeProxy of CORS_PROXIES) {
+      try {
+        const resp = await fetch(makeProxy(url));
+        if (!resp.ok) continue;
+        const text = await resp.text();
+        if (text && text.length > 100) return text;
+      } catch (e) { /* try next */ }
+    }
+    throw new Error('Both CORS proxies failed — check your connection and try again.');
+  }
+
+  function decodeHtmlEntities(str) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = str;
+    return txt.value;
+  }
+
+  function formatDuration(s) {
+    const m = Math.floor(s / 60), sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  }
+
+  function detectPlayer(html, pageUrl) {
+    const iheartMatch = html.match(/iheart\.com\/podcast\/(\d+)\/episode\/(\d+)\//);
+    if (iheartMatch) return { type: 'iheart', podcastId: iheartMatch[1], episodeId: iheartMatch[2] };
+
+    const bcMatch = html.match(/data-src="(\/media\/[^"]+\.mp3)"/);
+    if (bcMatch) {
+      const origin = new URL(pageUrl).origin;
+      const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/) || html.match(/<title>([^<|]+)/);
+      return {
+        type: 'brightcove',
+        mediaUrl: origin + bcMatch[1],
+        title: titleMatch ? decodeHtmlEntities(titleMatch[1].trim()) : 'Audio segment',
+      };
+    }
+    return null;
+  }
+
+  function setStep(n, state) {
+    document.getElementById('step' + n).className = 'step ' + state;
+  }
+
+  function setProgress(pct) {
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  function setStatusText(msg, isError = false) {
+    const el = document.getElementById('status-text');
+    el.className = 'status-text' + (isError ? ' error' : '');
+    if (msg) {
+      el.innerHTML = isError
+        ? msg
+        : `<span class="spinner"></span>${msg}`;
+    } else {
+      el.innerHTML = '';
+    }
+  }
+
+  async function run() {
+    const input = document.getElementById('url-input').value.trim();
+    if (!input) return;
+
+    if (!input.includes('newstalkzb.co.nz')) {
+      document.getElementById('progress-area').className = 'progress-area visible';
+      setStatusText('Please enter a Newstalk ZB page URL.', true);
+      return;
+    }
+
+    document.getElementById('result').className = 'result';
+    document.getElementById('dl-status').className = 'dl-status';
+    document.getElementById('go-btn').disabled = true;
+    document.getElementById('progress-area').className = 'progress-area visible';
+    setStep(1, ''); setStep(2, ''); setStep(3, '');
+    setProgress(0);
+    setStatusText('');
+
+    try {
+      setStep(1, 'active');
+      setStatusText('Fetching page…');
+      setProgress(15);
+      const html = await fetchWithProxy(input);
+      setStep(1, 'done');
+      setProgress(40);
+
+      setStep(2, 'active');
+      setStatusText('Finding audio player…');
+      const player = detectPlayer(html, input);
+      if (!player) throw new Error('No audio player found. Try an audio segment or podcast episode page.');
+      setStep(2, 'done');
+      setProgress(65);
+
+      setStep(3, 'active');
+      setStatusText('Resolving audio URL…');
+
+      let title, mediaUrl, meta, playerType;
+
+      if (player.type === 'brightcove') {
+        mediaUrl = player.mediaUrl;
+        title = player.title;
+        meta = 'Brightcove · newstalkzb.co.nz';
+        playerType = 'brightcove';
+      } else {
+        const apiResp = await fetch(`https://nz.api.iheart.com/api/v3/podcast/episodes/${player.episodeId}`);
+        if (!apiResp.ok) throw new Error(`iHeart API error ${apiResp.status}`);
+        const data = await apiResp.json();
+        const ep = data.episode;
+        if (!ep?.mediaUrl) throw new Error('No audio URL in API response.');
+        mediaUrl = ep.mediaUrl;
+        title = ep.title || 'Untitled';
+        meta = (ep.duration ? formatDuration(ep.duration) + ' · ' : '') +
+               (ep.podcastSlug ? ep.podcastSlug.replace(/^\d+-/, '').replace(/-/g, ' ') : '');
+        playerType = 'iheart';
+      }
+
+      setStep(3, 'done');
+      setProgress(100);
+      setStatusText('');
+
+      currentUrl = mediaUrl;
+      currentTitle = title;
+
+      const icon = document.getElementById('ep-icon');
+      icon.className = `ep-icon ${playerType}`;
+      icon.textContent = playerType === 'iheart' ? '🎙️' : '📻';
+
+      document.getElementById('ep-title').innerHTML =
+        title + `<span class="ep-badge ${playerType}">${playerType === 'iheart' ? '♥ iHeart' : '▶ Brightcove'}</span>`;
+      document.getElementById('ep-meta').textContent = meta;
+      document.getElementById('ep-url').textContent = mediaUrl;
+      document.getElementById('result').className = 'result visible';
+
+      // Auto-download
+      setTimeout(() => autoDownload(), 300);
+
+    } catch (err) {
+      setStatusText(err.message, true);
+      setProgress(0);
+      setStep(1, ''); setStep(2, ''); setStep(3, '');
+    } finally {
+      document.getElementById('go-btn').disabled = false;
+    }
+  }
+
+  async function autoDownload() {
+    const dlStatus = document.getElementById('dl-status');
+    const dlStatusText = document.getElementById('dl-status-text');
+    dlStatus.className = 'dl-status visible';
+    dlStatusText.textContent = 'Downloading…';
+    try {
+      const resp = await fetch(currentUrl);
+      if (!resp.ok) throw new Error();
+      const blob = await resp.blob();
+      triggerDownload(blob);
+      dlStatusText.textContent = 'Download complete ✓';
+      setTimeout(() => dlStatus.className = 'dl-status', 3000);
+    } catch {
+      dlStatus.className = 'dl-status';
+      // Silent fail — user can still click Download manually
+    }
+  }
+
+  function triggerDownload(blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = currentTitle.replace(/[^a-z0-9 \-_]/gi, '').trim().replace(/\s+/g, '_').substring(0, 80) + '.mp3';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }
+
+  async function downloadAudio() {
+    const btn = document.getElementById('dl-btn');
+    btn.textContent = '…';
+    btn.disabled = true;
+    try {
+      const resp = await fetch(currentUrl);
+      if (!resp.ok) throw new Error();
+      const blob = await resp.blob();
+      triggerDownload(blob);
+    } catch {
+      window.open(currentUrl, '_blank');
+    } finally {
+      btn.textContent = '↓ Download';
+      btn.disabled = false;
+    }
+  }
+
+  function copyUrl(e) {
+    if (!currentUrl) return;
+    navigator.clipboard.writeText(currentUrl).then(() => {
+      const btn = e.target;
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => btn.textContent = 'Copy URL', 1800);
+    });
+  }
+
+  function openUrl() {
+    if (currentUrl) window.open(currentUrl, '_blank');
+  }
+
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') run();
+  });
+</script>
+
+</body>
+</html>
